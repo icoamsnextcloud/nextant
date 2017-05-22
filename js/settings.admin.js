@@ -77,8 +77,14 @@ $(document)
 								index_files_external : ($('#solr_index_files_external')
 										.is(':checked')) ? 1 : 0,
 								index_files_encrypted : ($('#solr_index_files_encrypted')
-										.is(':checked')) ? 1 : 0
-							}
+										.is(':checked')) ? 1 : 0,
+								/*
+								 * Author: Lawrence Chan
+								 * Description: For exclusion list
+								 * */
+                                index_files_exclusion_list : ($('#solr_index_files_exclusion_list')
+                                    .is(':checked')) ? 1 : 0
+							};
 
 							if (switched == 'index_files')
 								data.index_files = (data.index_files == 1) ? 0
@@ -111,6 +117,14 @@ $(document)
 							if (switched == 'index_files_encrypted')
 								data.index_files_encrypted = (data.index_files_encrypted == 1) ? 0
 										: 1;
+
+                            /*
+                             * Author: Lawrence Chan
+                             * Description: Trigger the value of exclusion list config
+                             * */
+                            if (switched == 'index_files_exclusion_list')
+                                data.index_files_exclusion_list = (data.index_files_exclusion_list == 1) ? 0
+                                    : 1;
 
 							$.post(OC.filePath('nextant', 'ajax/settings',
 									'option_files.php'), data,
@@ -279,6 +293,14 @@ $(document)
 									(response.index_files_external == 1));
 							$('#solr_index_files_encrypted').prop('checked',
 									(response.index_files_encrypted == 1));
+
+                            /*
+                             * Author: Lawrence Chan
+                             * Description: For exclusion list option response
+                             * */
+                            $('#solr_index_files_exclusion_list').prop('checked',
+                                (response.index_files_exclusion_list == 1));
+
 							$('#solr_index_files_max_size').val(
 									response.index_files_max_size);
 
@@ -692,6 +714,17 @@ $(document)
 										nextantSettings
 												.savesuboptions_files('index_files_encrypted');
 									});
+
+                    /*
+                     * Author: Lawrence Chan
+                     * Description: Listener for exclusion list option checkbox
+                     * */
+                    $('#solr_index_files_exclusion_list')
+                        .mousedown(
+                            function() {
+                                nextantSettings
+                                    .savesuboptions_files('index_files_exclusion_list');
+                            });
 
 					$('#solr_filters_text')
 							.mousedown(

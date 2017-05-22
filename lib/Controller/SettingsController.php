@@ -108,6 +108,11 @@ class SettingsController extends Controller
             'index_files_federated' => $this->configService->getAppValue('index_files_federated'),
             'index_files_external' => $this->configService->getAppValue('index_files_external'),
             'index_files_encrypted' => $this->configService->getAppValue('index_files_encrypted'),
+            /*
+             * Author: Lawrence Chan
+             * Description: For Excluding List
+             * */
+            'index_files_exclusion_list' => $this->configService->getAppValue('index_files_exclusion_list'),
             'index_files_filters_text' => $this->configService->getAppValue('index_files_filters_text'),
             'index_files_filters_pdf' => $this->configService->getAppValue('index_files_filters_pdf'),
             'index_files_filters_office' => $this->configService->getAppValue('index_files_filters_office'),
@@ -138,7 +143,7 @@ class SettingsController extends Controller
         return $response;
     }
 
-    public function setOptionsFiles($index_files, $index_files_max_size, $index_files_tree, $index_files_nextant_only, $index_files_trash, $index_files_sharelink, $index_files_federated, $index_files_external, $index_files_encrypted, $index_files_filters)
+    public function setOptionsFiles($index_files, $index_files_max_size, $index_files_tree, $index_files_nextant_only, $index_files_trash, $index_files_sharelink, $index_files_federated, $index_files_external, $index_files_encrypted, $index_files_exclusion_list, $index_files_filters)
     {
         $this->configService->setAppValue('index_files', $index_files);
         $this->configService->setAppValue('index_files_tree', $index_files_tree);
@@ -148,6 +153,11 @@ class SettingsController extends Controller
         $this->configService->setAppValue('index_files_federated', $index_files_federated);
         $this->configService->setAppValue('index_files_external', $index_files_external);
         $this->configService->setAppValue('index_files_encrypted', $index_files_encrypted);
+        /*
+         * Author: Lawrence Chan
+         * Description: For Excluding List
+         * */
+        $this->configService->setAppValue('index_files_exclusion_list', $index_files_exclusion_list);
         $this->configService->setAppValue('index_files_max_size', $index_files_max_size);
         $this->configService->setAppValue('index_files_filters', $index_files_filters);
         

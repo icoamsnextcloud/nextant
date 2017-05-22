@@ -225,7 +225,13 @@ class IndexService
             }
             
             if ($entry->getType() == ItemDocument::TYPE_FILE)
-                $this->sourceService->file()->syncDocument($entry);
+                /*
+                 * Author: Lawrence Chan
+                 * Description: Excluding Document which have embedded object MS Document.
+                 * */
+                if (!$this->sourceService->file()->syncDocument($entry)) {
+                    continue;
+                }
             if ($entry->getType() == ItemDocument::TYPE_BOOKMARK)
                 $this->sourceService->bookmark()->syncDocument($entry);
             if ($entry->getType() == ItemDocument::TYPE_TEST) {

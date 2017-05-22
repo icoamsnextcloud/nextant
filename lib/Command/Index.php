@@ -64,7 +64,9 @@ class Index extends Base
 
     private $currentIndexStatus = array();
 
-    public function __construct(IUserManager $userManager, $rootFolder, $indexService, $queueService, $solrService, $solrTools, $solrAdmin, $configService, $sourceService, $miscService)
+    private $exclusionListMapper;
+
+    public function __construct(IUserManager $userManager, $rootFolder, $indexService, $queueService, $solrService, $solrTools, $solrAdmin, $configService, $sourceService, $miscService, $exclusionListMapper)
     {
         parent::__construct();
         $this->userManager = $userManager;
@@ -77,6 +79,7 @@ class Index extends Base
         $this->configService = $configService;
         $this->sourceService = $sourceService;
         $this->miscService = $miscService;
+        $this->exclusionListMapper = $exclusionListMapper;
     }
 
     protected function configure()
@@ -121,7 +124,18 @@ class Index extends Base
         $output->writeln('<comment>nextant v' . $this->configService->getAppValue('installed_version') . '</comment>');
         // $output->writeln('<comment>discussion forum:</comment> https://help.nextcloud.com/c/apps/nextant');
         // $output->writeln('');
-        
+
+        /*
+         * Author: Lawrence Chan
+         * Description: Clear exclusion list table before the indexing start
+         * */
+        if ($this->configService->getAppValue('index_files_exclusion_list')) {
+            $output->writeln('---------------------------------------------');
+            $output->writeln('<comment>Clean DB exclusion list</comment>');
+            $this->exclusionListMapper->clear();
+            $output->writeln('---------------------------------------------');
+        }
+
         if (! $this->solrService->configured(true)) {
             $output->writeln('Nextant is not yet configured');
             return;

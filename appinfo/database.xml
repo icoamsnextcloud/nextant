@@ -26,4 +26,41 @@
 		</declaration>
 	</table>
 
+	<!--
+	    Author: Lawrence Chan
+	    Description: Exclusion List Table
+	-->
+	<table>
+		<name>*dbprefix*nextant_exclusion_list</name>
+		<declaration>
+			<field>
+				<name>id</name>
+				<type>integer</type>
+				<notnull>true</notnull>
+				<autoincrement>true</autoincrement>
+				<unsigned>true</unsigned>
+				<primary>true</primary>
+				<length>8</length>
+			</field>
+			<field>
+				<name>fileid</name>
+				<type>integer</type>
+				<notnull>true</notnull>
+				<length>11</length>
+			</field>
+			<field>
+				<name>owner</name>
+				<type>text</type>
+				<notnull>true</notnull>
+				<length>100</length>
+			</field>
+			<field>
+				<name>path</name>
+				<type>text</type>
+				<notnull>true</notnull>
+				<length>10000</length>
+			</field>
+		</declaration>
+	</table>
+
 </database>

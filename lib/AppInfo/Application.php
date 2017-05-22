@@ -93,7 +93,7 @@ class Application extends App
         });
         
         $container->registerService('FileService', function ($c) {
-            return new FileService($c->query('ConfigService'), $c->query('RootFolder'), $c->query('SolrService'), $c->query('SolrToolsService'), $c->query('MiscService'));
+            return new FileService($c->query('ConfigService'), $c->query('RootFolder'), $c->query('SolrService'), $c->query('SolrToolsService'), $c->query('MiscService'), $c->query('ExclusionListMapper'));
         });
         
         $container->registerService('BookmarkService', function ($c) {
@@ -120,6 +120,15 @@ class Application extends App
             return new LiveQueueMapper($c->query('ServerContainer')
                 ->getDatabaseConnection());
         });
+
+        /*
+         * Author: Lawrence Chan
+         * Description: Register a item mapper for exclusion list table
+         * */
+        $container->registerService('ExclusionListMapper', function ($c) {
+            return new ExclusionListMapper($c->query('ServerContainer')
+                ->getDatabaseConnection());
+        });
         
         $container->registerService('FilesEvents', function ($c) {
             return new FilesEvents($c->query('UserId'), $c->query('ConfigService'), $c->query('QueueService'), $c->query('MiscService'));
@@ -136,6 +145,21 @@ class Application extends App
         $container->registerService('SettingsController', function ($c) {
             return new SettingsController($c->query('AppName'), $c->query('Request'), $c->query('ConfigService'), $c->query('IndexService'), $c->query('SolrService'), $c->query('SolrToolsService'), $c->query('SolrAdminService'), $c->query('ServerContainer')
                 ->getL10N('nextant'), $c->query('MiscService'));
+        });
+
+        /*
+         * Author: Lawrence Chan
+         * Description: Register AJAX query exclusion list of user
+         * */
+        $container->registerService('ExclusionController', function ($c) {
+            return new ExclusionController(
+                $c->query('AppName'),
+                $c->query('Request'),
+                $c->query('UserId'),
+                $c->query('ConfigService'),
+                $c->query('MiscService'),
+                $c->query('ExclusionListMapper')
+            );
         });
         
         /**

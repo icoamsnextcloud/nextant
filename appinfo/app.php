@@ -35,4 +35,17 @@ $app->registerFilesHooks();
 $app->registerSettingsAdmin();
 $app->registerSearchProvider();
 
-
+/*
+ * Author: Lawrence Chan
+ * Description: Add a option to navigation menu
+ * */
+if (\OC::$server->getConfig()->getAppValue('nextant', 'index_files_exclusion_list', '0') === '1') {
+    $navigation = \OCA\Files\App::getNavigationManager();
+    $navigation->add([
+        "id" => 'nextantexclusionlist', // UI id, "app-context-nextantexclusionlist"
+        "appname" => 'nextant',
+        "script" => 'list.php',
+        "order" => 30,                  // Order of navigation menu
+        "name" => 'Exclusion List'
+    ]);
+}

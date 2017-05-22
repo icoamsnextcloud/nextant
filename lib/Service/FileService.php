@@ -26,6 +26,8 @@
  */
 namespace OCA\Nextant\Service;
 
+use OC\User\User;
+use OCA\Nextant\Db\ExclusionList;
 use \OCA\Nextant\Service\SolrService;
 use \OCA\Nextant\Service\SolrToolsService;
 use \OCA\Nextant\Items\ItemError;
@@ -60,7 +62,15 @@ class FileService
 
     private $externalMountPoint;
 
-    public function __construct($configService, $rootFolder, $solrService, $solrTools, $miscService)
+    private $exclusionListMapper;
+
+    private $oleExclusionObject = array(
+        "ObjectPool",
+        "Ole10Native",
+        ""
+    );
+
+    public function __construct($configService, $rootFolder, $solrService, $solrTools, $miscService, $exclusionListMapper)
     {
         // $this->root = $root;
         $this->configService = $configService;
@@ -68,6 +78,11 @@ class FileService
         $this->solrService = $solrService;
         $this->solrTools = $solrTools;
         $this->miscService = $miscService;
+        /*
+         * Author: Lawrence Chan
+         * Description:
+         * */
+        $this->exclusionListMapper = $exclusionListMapper;
     }
 
     public function setDebug($debug)
@@ -208,6 +223,18 @@ class FileService
             $item->valid(true);
             $item->extractable(true);
         }
+
+        /* Author: Lawrence Chan
+         * Description: As document need to get information before sending request to Solr.
+         *              After get the information, check MS-Office document with embedded object
+         *              If find embedded object in document, its will not send to solr to have indexing task,
+         *              also insert a record to "Exclusion List Table".
+         * */
+        if ($this->configService->getAppValue('index_files_exclusion_list')) {
+            if (!$this->checkMSDocEmbeddedObject($item)) {
+                return false;
+            }
+        }
         
         $this->dataRetrievalFromPath($item);
         
@@ -217,6 +244,140 @@ class FileService
         }
         
         return true;
+    }
+
+    /**
+     * Author: Lawrence Chan
+     * Description: The core logic for checking embedded object in MS-Office document
+     * @param ItemDocument $item
+     */
+    public function checkMSDocEmbeddedObject(ItemDocument $item) {
+        $this->miscService->log("--------------File ID-----------  " . $item->getId() . $item->getMimetype(), 0);
+        if ($this->isMSMime($item->getMimetype())) {
+            // Get absolute path of document
+            $this->generateAbsolutePath($item);
+            $this->miscService->log("Start extract the Office document |" . $item->getPath() . "|" . $item->getMimetype(), 0);
+
+            if ($this->isMSMime($item->getMimetype(), true)) {
+                // OLE
+                $poi_path = __DIR__ . "/../../../jar/poi-3.16-beta2.jar";
+                $cmd = 'java -cp /poi-3.16.jar org.apache.poi.poifs.dev.POIFSLister "' . $item->getAbsolutePath() . '"';
+                $this->miscService->log($cmd, 0);
+                exec($cmd, $result, $rc);
+
+                // Check result
+                for ( $i = 0; $i < sizeof($result); $i++) {
+                    // "ObjectPool" for MS word only, Ole10Native both in MS-word and MS-excel
+
+                    $isEmbedded = false;
+
+                    switch ($item->getMimetype()) {
+                        case 'application/vnd.ms-word':
+                            $isEmbedded = strpos($result[$i], "ObjectPool") && !strpos($result[$i + 1], "no children");
+                            break;
+                        case 'application/msword':
+                            $isEmbedded = strpos($result[$i], "ObjectPool") && !strpos($result[$i + 1], "no children");
+                            break;
+                        case 'application/vnd.ms-excel':
+                            $isEmbedded = strpos($result[$i], "MBD");
+                            break;
+                        case 'application/msexcel':
+                            $isEmbedded = strpos($result[$i], "MBD");
+                            break;
+//                        case 'application/vnd.ms-powerpoint':
+//                            $isEmbedded = strpos($result[$i], "WordDocument") || strpos($result[$i], "Workbook");
+//                            break;
+//                        case 'application/mspowerpoint':
+//                            $isEmbedded = strpos($result[$i], "WordDocument") || strpos($result[$i], "Workbook");
+//                            break;
+                        default:
+                            $this->miscService->log("Not MS-Doc, MIME-Type: " . $item->getMimetype(), 0);
+                    }
+//                    $isEmbedded = strpos($result[$i], "ObjectPool") || strpos($result[$i], "Ole10Native");
+
+                    $this->miscService->log("Checking text: " . $result[$i], 0);
+                    if ($isEmbedded) {
+                        $this->miscService->log("The file have embedded object", 0);
+                        $this->miscService->log("Have ObjectPool", 0);$this->exclusionListMapper->existOrInsert(new ExclusionList($item->getId(), $item->getOwner(), $item->getPath()));
+                        return false;
+                    }
+                }
+
+                $this->miscService->log("RC: $rc", 0);
+                $this->miscService->log("Return code dose not zero or have not embedded document");
+            } else {
+                // OOXML or Non-OLE
+                $cmd = 'unzip -Zl "' . $item->getAbsolutePath() . '" | grep "embeddings" | wc -l';
+                // Execute linux cmd
+                exec($cmd, $result, $rc);
+                // Debug result
+                $this->miscService->log("----------------Result String: " . implode(" ",$result) . "--------------", 0);
+                if ($rc == "0" && $result[0] != "0") {
+                    $this->miscService->log("The file have embedded object", 0);
+                    $this->exclusionListMapper->existOrInsert(new ExclusionList($item->getId(), $item->getOwner(), $item->getPath()));
+                    return false;
+                } else {
+                    $this->miscService->log("RC: $rc", 0);
+                    $this->miscService->log("Return code dose not zero or have not embedded document");
+                }
+            }
+        } else {
+            $this->miscService->log("Non-office file", 0);
+        }
+        return true;
+    }
+
+    /**
+     * Author: Lawrence Chan
+     * Description: Check document MimeType belongs to MS-Office
+     * @param $mime
+     * @param bool $checkOLE [default=false] if true, only for OLE2 checking
+     * @return bool
+     */
+    public function isMSMime($mime, $checkOLE = false) {
+        $filters = $this->configService->getFileFilters();
+        $acceptedMimeType = array(
+            'vnd' => array(
+                'application/vnd.oasis.opendocument',
+                'application/vnd.sun.xml',
+                'application/vnd.openxmlformats-officedocument',
+                'application/vnd.ms-word',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.ms-excel',
+                'application/msword',
+                'application/mspowerpoint',
+                'application/msexcel'
+            )
+        );
+
+        if ($checkOLE) {
+            $oleMimeType = array(
+                'application/vnd.ms-word',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.ms-excel',
+                'application/msword',
+                'application/mspowerpoint',
+                'application/msexcel'
+            );
+            foreach ($oleMimeType as $ole) {
+                if (substr($mime, 0, strlen($ole)) == $ole) {
+                    if ($filters['office'] !== '1')
+                        return false;
+                    return true;
+                }
+            }
+        } else {
+            foreach ($acceptedMimeType['vnd'] as $mt) {
+                if (substr($mime, 0, strlen($mt)) == $mt) {
+                    if ($filters['office'] !== '1')
+                        return false;
+                    return true;
+                }
+            }
+        }
+
+        // default
+        return false;
     }
 
     /**

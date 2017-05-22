@@ -80,6 +80,16 @@ return [
             'name' => 'search#suggestRequestPublic',
             'url' => 'ajax/suggest_public.php',
             'verb' => 'POST'
+        ],
+
+        /*
+         * Author: Lawrence Chan
+         * Description: AJAX query exclusion list of user
+         * */
+        [
+            'name' => 'exclusion#getExclusionList',
+            'url' => 'ajax/exclusion_list.php',
+            'verb' => 'POST'
         ]
     ]
 ];

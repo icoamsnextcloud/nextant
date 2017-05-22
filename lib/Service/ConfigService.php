@@ -73,6 +73,11 @@ class ConfigService
         'index_files_federated' => '0',
         'index_files_external' => '0',
         'index_files_encrypted' => '0',
+        /*
+         * Author: Lawrence Chan
+         * Description: Initial value of file name of excluding list
+         * */
+        'index_files_exclusion_list' => '0',
         'index_files_max_size' => '40',
         'index_files_filters_text' => '1',
         'index_files_filters_pdf' => '1',
