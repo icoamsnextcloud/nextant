@@ -159,6 +159,18 @@ style('nextant', 'admin');
 									id="solr_index_files_encrypted" value="1" style="margin: 10px;"></td>
 							</tr>
 
+                            <!--
+                                Author: Lawrence Chan
+                                Description: Config exclusion list in admin page
+                            -->
+                            <tr style="height: 30px;">
+                                <td class="nextant_admin_left">
+                                    <?php p($l->t('Exclusion List :')) ?></td>
+                                <td colspan="2"><input type="checkbox"
+                                                       name="solr_index_files_exclusion_list"
+                                                       id="solr_index_files_exclusion_list" value="1" style="margin: 10px;"></td>
+                            </tr>
+
 							<tr style="height: 30px;">
 								<td class="nextant_admin_left">
 	    <?php p($l->t('Last index:')) ?></td>
